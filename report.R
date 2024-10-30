@@ -25,11 +25,14 @@ library(tcltk)
 db_path = 'C:/Users/pedro/Documents/iea/banco_pca.sqlite3'
 template_path = 'D:/IEA/report_pca/template.pptx'
 output_path = 'C:/Users/pedro/Desktop/report.pptx'
-nome_municipio = 'São Paulo'
+nome_municipio = 'Ribeirão Preto'
 sigla_uf = 'SP'
-redes = 'Municipal'
+rede = 'Municipal'
 etapas = 'Anos Iniciais'
 anos = 2019
+add_boundary = FALSE
+add_surface = FALSE
+ano_inse = 2021
 
 etapa = etapas[1]
 ano = anos[1]
@@ -38,7 +41,7 @@ adp = adapter(db_path)
 df = adp %>% adapter.fetch_pca_data_schools(
   nome_municipio = nome_municipio,
   sigla_uf = sigla_uf,
-  redes = redes,
+  redes = rede,
   etapas = etapas,
   anos = anos
 )
@@ -53,6 +56,35 @@ dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
 colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
 pca_obj = pca.from_data_frame(dfpca)
 
+georef_obj = if(add_surface || add_boundary) {
+  georef.from_geojson(
+    adp %>% adapter.fetch_municipality_boundary(
+      nome_municipio = nome_municipio,
+      sigla_uf = sigla_uf
+    ) %>% .$malha
+  )
+} else {
+  NULL
+}
+
+surface_data = NULL
+surface_latitude = NULL
+surface_longitude = NULL
+
+if(add_surface) {
+  inse = adp %>% adapter.fetch_municipality_inse(
+    nome_municipio = nome_municipio,
+    sigla_uf = sigla_uf,
+    rede = rede,
+    ano = ano_inse
+  )
+
+  surface_data = inse$inse
+  surface_latitude = inse$latitude
+  surface_longitude = inse$longitude
+}
+
+# Título
 doc = ppt.from_template(template_path) %>%
   ppt.on_slide(1)
 
@@ -66,6 +98,7 @@ doc = doc %>% ppt.add_document_title(
 
 doc = doc %>% ppt.on_slide(2)
 
+# Transição de etapa
 doc = doc %>% ppt.add_transition(
   text = paste0(
     "ACP das escolas da rede ",rede," dos ",
@@ -74,6 +107,7 @@ doc = doc %>% ppt.add_transition(
   )
 )
 
+# Matriz de indicadores
 df_table = data.frame(
   'Nome da escola' = df$nome_escola,
   'Nome abreviado' = inep.abbreviate_school_names(df$nome_escola),
@@ -101,8 +135,143 @@ doc = doc %>% ppt.new_slide(
 
 doc = doc %>% ppt.add_table(
   table_obj = matriz_indicadores,
+  position = 'center-large'
+)
+
+# Dispersão
+doc = doc %>% ppt.new_slide(
+  title = paste0("ACP da Rede ",rede," – ",etapa,", ", ano)
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = pcaviz.scatter(
+    pca_obj = pca_obj,
+    labels = inep.abbreviate_school_names(df$nome_escola)
+  ),
   position = 'center'
 )
 
+# Variância explicada
+doc = doc %>% ppt.new_slide(
+  title = paste0(
+    "Percentual de variância explicada - ",
+    rede," – ",etapa,", ", ano
+  )
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = pcaviz.explained_variance(
+    pca_obj = pca_obj
+  ),
+  position = 'center'
+)
+
+# Cargas
+doc = doc %>% ppt.new_slide(
+  title = paste0(
+    "Cargas dos componentes principais – ",
+    rede," – ",etapa,", ", ano
+  )
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = pcaviz.component_loads(
+    pca_obj = pca_obj,
+    component = 1
+  ) %>% pcaviz.add_title("Componente 1"),
+  position = 'left-half'
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = pcaviz.component_loads(
+    pca_obj = pca_obj,
+    component = 2
+  ) %>% pcaviz.add_title("Componente 2"),
+  position = 'right-half'
+)
+
+# Mapas
+labels = if(nrow(df) > 30) {
+  NULL
+} else {
+  labels = inep.abbreviate_school_names(df$nome_escola)
+}
+
+# Mapa matemática
+doc = doc %>% ppt.new_slide(
+  title = paste0(
+    "Aprendizado adequado em matemática – ",
+    rede," – ",etapa,", ", ano
+  )
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = geogg.percentage_of_proficiency_map(
+    data = df$mat,
+    subject = 'mathematics',
+    latitude = df$latitude,
+    longitude = df$longitude,
+    labels = labels,
+    add_surface = add_surface,
+    add_boundary = add_boundary,
+    georef_obj = georef_obj,
+    surface_data = surface_data,
+    surface_latitude = surface_latitude,
+    surface_longitude = surface_longitude,
+    surface_legend = 'Nível Socioeconômico'
+  ),
+  position = 'center'
+)
+
+# Mapa matemática
+doc = doc %>% ppt.new_slide(
+  title = paste0(
+    "Aprendizado adequado em língua portuguesa – ",
+    rede," – ",etapa,", ", ano
+  )
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = geogg.percentage_of_proficiency_map(
+    data = df$lp,
+    subject = 'portuguese language',
+    latitude = df$latitude,
+    longitude = df$longitude,
+    labels = labels,
+    add_surface = add_surface,
+    add_boundary = add_boundary,
+    georef_obj = georef_obj,
+    surface_data = surface_data,
+    surface_latitude = surface_latitude,
+    surface_longitude = surface_longitude,
+    surface_legend = 'Nível Socioeconômico'
+  ),
+  position = 'center'
+)
+
+# Mapa ACP
+doc = doc %>% ppt.new_slide(
+  title = paste0(
+    "Desempenho relativo – ",
+    rede," – ",etapa,", ", ano
+  )
+)
+
+doc = doc %>% ppt.add_ggplot(
+  ggplot_obj = geogg.pca_map(
+    pca_obj = pca_obj,
+    latitude = df$latitude,
+    longitude = df$longitude,
+    labels = labels,
+    add_surface = add_surface,
+    add_boundary = add_boundary,
+    georef_obj = georef_obj,
+    surface_data = surface_data,
+    surface_latitude = surface_latitude,
+    surface_longitude = surface_longitude,
+    surface_legend = 'Nível Socioeconômico'
+  ),
+  position = 'center'
+)
 
 doc %>% ppt.save(output_path)
