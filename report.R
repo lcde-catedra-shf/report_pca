@@ -2,71 +2,6 @@ library(lcde.toolbox)
 library(lcde.client)
 library(tcltk)
 
-janela = tktoplevel()
-tkwm.title(janela, "Relatório PCA")
-
-label_rede <- tklabel(janela, text = "Selecione uma rede:")
-tkpack(label_rede, anchor = "w")
-opcao_rede_selecionada = tclVar("Opção 1")  # Valor padrão
-
-radio_rede_1 = tkradiobutton(
-  janela,
-  text = "Municipal",
-  variable = opcao_rede_selecionada, value = "Municipal"
-)
-radio_rede_2 = tkradiobutton(
-  janela,
-  text = "Estadual",
-  variable = opcao_rede_selecionada, value = "Estadual"
-)
-radio_rede_3 = tkradiobutton(
-  janela,
-  text = "Federal",
-  variable = opcao_rede_selecionada, value = "Federal"
-)
-
-tkpack(radio_rede_1, anchor = "w")
-tkpack(radio_rede_2, anchor = "w")
-tkpack(radio_rede_3, anchor = "w")
-
-label_rede <- tklabel(janela, text = "Selecione uma rede:")
-tkpack(label_rede, anchor = "w")
-
-check_etapa_1 = tkcheckbutton(
-  janela,
-  text = "Anos Iniciais",
-  variable = tclVar(0)
-)
-check_etapa_2 = tkcheckbutton(
-  janela,
-  text = "Anos Finais",
-  variable = tclVar(0)
-)
-check_etapa_3 = tkcheckbutton(
-  janela,
-  text = "Ensino Médio",
-  variable = tclVar(0)
-)
-
-tkpack(check_etapa_1, anchor = "w")
-tkpack(check_etapa_2, anchor = "w")
-tkpack(check_etapa_3, anchor = "w")
-
-lista_anos = tklistbox(janela, height = length(opcoes), selectmode = "single")
-for (opcao in opcoes) {
-  tkinsert(lista, "end", opcao)
-}
-tkgrid(lista)
-
-botao_funcao <- function() {
-  indice <- as.integer(tkcurselection(lista)) + 1  # Converter índice
-  opcao_selecionada <- opcoes[indice]
-  tkmessageBox(title = "Seleção", message = paste("Você selecionou:", opcao_selecionada))
-}
-
-botao <- tkbutton(janela, text = "Confirmar Seleção", command = botao_funcao)
-tkgrid(botao)
-
 db_path = 'C:/Users/iea/Desktop/Pedro/banco_pca.sqlite3'
 template_path = 'C:/Users/iea/Desktop/Pedro/report_pca/template.pptx'
 output_path = 'C:/Users/iea/Desktop/report.pptx'
@@ -78,6 +13,8 @@ anos = c(2019, 2023)
 add_boundary = FALSE
 add_surface = FALSE
 ano_inse = 2021
+
+adp = adapter(db_path)
 
 for(etapa in etapas) {
   for(ano in anos) {
@@ -96,9 +33,6 @@ for(etapa in etapas) {
     }
   }
 }
-
-adp = adapter(db_path)
-
 
 georef_obj = if(add_surface || add_boundary) {
   georef.from_geojson(
