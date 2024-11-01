@@ -1,6 +1,5 @@
 library(lcde.toolbox)
 library(lcde.client)
-library(tcltk)
 
 db_path = 'C:/Users/iea/Desktop/Pedro/banco_pca.sqlite3'
 template_path = 'C:/Users/iea/Desktop/Pedro/report_pca/template.pptx'
