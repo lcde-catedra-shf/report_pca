@@ -4,12 +4,12 @@ library(lcde.client)
 db_path = 'C:/Users/pedro/Documents/iea/banco_pca.sqlite3'
 template_path = 'C:/Users/pedro/Documents/iea/report_pca/template.pptx'
 output_path = 'C:/Users/pedro/Desktop/report.pptx'
-nome_municipio = 'Francisco Morato'
+nome_municipio = 'Ribeirão Preto'
 sigla_uf = 'SP'
 rede = 'Municipal'
-etapas = c('Anos Iniciais')
-anos = c(2019, 2023)
-add_boundary = FALSE
+etapas = c('Anos Iniciais', 'Anos Finais')
+anos = c(2021, 2023)
+add_boundary = TRUE
 add_surface = TRUE
 ano_inse = 2019
 
@@ -84,7 +84,7 @@ doc = doc %>% ppt.add_document_title(
   title = paste0(
     "ACP das Escolas da rede ",rede,
     " do Município de ",nome_municipio,
-    " – 2019 e 2023"
+    " – ", anos[1] ," a ", anos[length(anos)]
   )
 )
 
