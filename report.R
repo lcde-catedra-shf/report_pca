@@ -8,12 +8,103 @@ nome_municipio = 'Ribeirão Preto'
 sigla_uf = 'SP'
 rede = 'Municipal'
 etapas = c('Anos Iniciais', 'Anos Finais')
-anos = c(2021, 2023)
+anos = c(2019, 2023)
 add_boundary = TRUE
 add_surface = TRUE
 ano_inse = 2019
 
 adp = adapter(db_path)
+
+# doc = ppt.from_template(template_path)
+# doc = doc %>% ppt.on_slide(2)
+# doc = doc %>% ppt.new_slide(title = 'Gráficos de Radar')
+#
+# # Obtendo dados do Estado
+# dados_estado = adp %>% adapter.fetch_state('SP')
+#
+# radar_data = adp %>% adapter.fetch_pca_data_municipality(
+#   nome_municipio = 'Ribeirão Preto',
+#   sigla_uf = 'SP',
+#   rede = 'Pública',
+#   etapa = 'Anos Iniciais',
+#   localizacao = 'Total',
+#   ano = 2019
+# )
+#
+# # Gráficos de Radar
+# for(i in 1:length(anos)) {
+#   for(j in 1:3) {
+#
+#     if(j == 1) {
+#       radar_data = adp %>% adapter.fetch_pca_data_municipality(
+#         nome_municipio = nome_municipio,
+#         sigla_uf = sigla_uf,
+#         rede = 'Pública',
+#         etapa = 'Anos Iniciais',
+#         localizacao = 'Total',
+#         anos[i]
+#       )
+#       radar_title = paste0(nome_municipio,', ',sigla_uf, ' - ', anos[i])
+#       radar_color = colors.mixed()[1]
+#     } else if(j == 2) {
+#       radar_data = adp %>% adapter.fetch_pca_data_state(
+#         sigla_uf = sigla_uf,
+#         rede = 'Pública',
+#         etapa = 'Anos Iniciais',
+#         localizacao = 'Total',
+#         ano = anos[i]
+#       )
+#       radar_title = paste0(dados_estado$nome_estado, ' - ', anos[i])
+#       radar_color = colors.mixed()[6]
+#     } else {
+#       radar_data = adp %>% adapter.fetch_pca_data_country(
+#         nome_pais = 'Brasil',
+#         rede = 'Pública',
+#         etapa = 'Anos Iniciais',
+#         localizacao = 'Total',
+#         ano = anos[i]
+#       )
+#       radar_title = paste0(dados_estado$nome_pais, ' - ', anos[i])
+#       radar_color = colors.mixed()[5]
+#     }
+#
+#     if(nrow(radar_data) == 0) {
+#       next()
+#     }
+#
+#     radar_data = na.omit(radar_data)
+#     radar_data$mat = round(radar_data$mat, 0)
+#     radar_data$lp = round(radar_data$lp, 0)
+#     radar_data$tdi = round(radar_data$tdi, 0)
+#     radar_data$np = round(radar_data$np * 10, 1)
+#     radar_data$fluxo = round(radar_data$fluxo*100, 0)
+#
+#     radar_data = radar_data[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
+#     colnames(radar_data) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+#
+#     radar_plot = ggviz.radar(
+#       data = radar_data,
+#       colors = radar_color,
+#       show_score = TRUE,
+#       title = radar_title,
+#       size = 'normal'
+#     )
+#
+#     doc = doc %>% ppt.add_ggplot(
+#       ggplot_obj = radar_plot,
+#       position = pptpos.grid(
+#         n_rows = length(anos),
+#         n_columns = 4,
+#         row = i,
+#         column = j,
+#         margin = 0.01
+#       )
+#     )
+#   }
+# }
+#
+# doc %>% ppt.save(output_path)
+
 
 for(etapa in etapas) {
   for(ano in anos) {
@@ -91,16 +182,17 @@ doc = doc %>% ppt.add_document_title(
 doc = doc %>% ppt.on_slide(2)
 
 for(etapa in etapas) {
-  # Transição de etapa
-  doc = doc %>% ppt.add_transition(
-    text = paste0(
-      "ACP das escolas da rede ",rede," dos ",
-      tolower(etapa)," do ensino fundamental do município de ",
-      nome_municipio," - ",sigla_uf
-    )
-  )
-
   for(ano in anos) {
+    # Transição de ano e etapa
+    doc = doc %>% ppt.add_transition(
+      text = paste0(
+        "Análise de Componentes Principais\n",
+        "Rede ",rede, "\n",
+        etapa," do Ensino Fundamental\n",
+        ano
+      )
+    )
+
     df = adp %>% adapter.fetch_pca_data_schools(
       nome_municipio = nome_municipio,
       sigla_uf = sigla_uf,
@@ -307,6 +399,15 @@ for(etapa in etapas) {
   colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
   pca_obj = pca.from_data_frame(dfpca)
 
+  # Transição de ano e etapa
+  doc = doc %>% ppt.add_transition(
+    text = paste0(
+      "Análise de Componentes Principais\n",
+      "Rede ",rede, "\n",
+      etapa," do Ensino Fundamental\n",
+      anos[1], ' a ', anos[length(anos)]
+    )
+  )
 
   # Dispersão
   doc = doc %>% ppt.new_slide(
@@ -438,6 +539,152 @@ for(etapa in etapas) {
       ),
       position = pptpos.grid(3,4,i,1),
       fit_height = TRUE
+    )
+  }
+
+  # Mapa MAT
+  doc = doc %>% ppt.new_slide(
+    title = paste0(
+      "Aprendizado em matemática – ",
+      rede," – ",etapa,", ", anos[1], " a ", anos[length(anos)]
+    )
+  )
+
+  for(i in 1:length(anos)) {
+    ano = anos[i]
+
+    df = adp %>% adapter.fetch_pca_data_schools(
+      nome_municipio = nome_municipio,
+      sigla_uf = sigla_uf,
+      redes = rede,
+      etapas = etapa,
+      anos = ano
+    )
+    df = na.omit(df)
+    df$mat = round(df$mat, 0)
+    df$lp = round(df$lp, 0)
+    df$tdi = round(df$tdi, 0)
+    df$np = round(df$np * 10, 1)
+    df$fluxo = round(df$fluxo*100, 0)
+
+    dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
+    colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+    pca_obj = pca.from_data_frame(dfpca)
+
+    doc = doc %>% ppt.add_ggplot(
+      ggplot_obj = geogg.percentage_of_proficiency_map(
+        data = df$mat,
+        subject = 'mathematics',
+        latitude = df$latitude,
+        longitude = df$longitude,
+        add_surface = add_surface,
+        add_boundary = add_boundary,
+        georef_obj = georef_obj,
+        surface_data = surface_data,
+        surface_latitude = surface_latitude,
+        surface_longitude = surface_longitude,
+        surface_legend = 'Nível Socioeconômico'
+      ) %>%
+        geogg.without_legend() %>%
+        geogg.add_title(paste0(ano)),
+      position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
+    )
+  }
+
+  # Mapa LP
+  doc = doc %>% ppt.new_slide(
+    title = paste0(
+      "Aprendizado em Língua Portuguesa – ",
+      rede," – ",etapa,", ", anos[1], " a ", anos[length(anos)]
+    )
+  )
+
+  for(i in 1:length(anos)) {
+    ano = anos[i]
+
+    df = adp %>% adapter.fetch_pca_data_schools(
+      nome_municipio = nome_municipio,
+      sigla_uf = sigla_uf,
+      redes = rede,
+      etapas = etapa,
+      anos = ano
+    )
+    df = na.omit(df)
+    df$mat = round(df$mat, 0)
+    df$lp = round(df$lp, 0)
+    df$tdi = round(df$tdi, 0)
+    df$np = round(df$np * 10, 1)
+    df$fluxo = round(df$fluxo*100, 0)
+
+    dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
+    colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+    pca_obj = pca.from_data_frame(dfpca)
+
+    doc = doc %>% ppt.add_ggplot(
+      ggplot_obj = geogg.percentage_of_proficiency_map(
+        data = df$lp,
+        subject = 'portuguese language',
+        latitude = df$latitude,
+        longitude = df$longitude,
+        add_surface = add_surface,
+        add_boundary = add_boundary,
+        georef_obj = georef_obj,
+        surface_data = surface_data,
+        surface_latitude = surface_latitude,
+        surface_longitude = surface_longitude,
+        surface_legend = 'Nível Socioeconômico'
+      ) %>%
+        geogg.without_legend() %>%
+        geogg.add_title(paste0(ano)),
+      position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
+    )
+  }
+
+  # Mapa ACP
+  doc = doc %>% ppt.new_slide(
+    title = paste0(
+      "Desempenho relativo – ",
+      rede," – ",etapa,", ", anos[1], " a ", anos[length(anos)]
+    )
+  )
+
+  for(i in 1:length(anos)) {
+    ano = anos[i]
+
+    df = adp %>% adapter.fetch_pca_data_schools(
+      nome_municipio = nome_municipio,
+      sigla_uf = sigla_uf,
+      redes = rede,
+      etapas = etapa,
+      anos = ano
+    )
+    df = na.omit(df)
+    df$mat = round(df$mat, 0)
+    df$lp = round(df$lp, 0)
+    df$tdi = round(df$tdi, 0)
+    df$np = round(df$np * 10, 1)
+    df$fluxo = round(df$fluxo*100, 0)
+
+    dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
+    colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+    pca_obj = pca.from_data_frame(dfpca)
+
+    doc = doc %>% ppt.add_ggplot(
+      ggplot_obj = geogg.pca_map(
+        pca_obj = pca_obj,
+        latitude = df$latitude,
+        longitude = df$longitude,
+        add_surface = add_surface,
+        add_boundary = add_boundary,
+        georef_obj = georef_obj,
+        surface_data = surface_data,
+        surface_latitude = surface_latitude,
+        surface_longitude = surface_longitude,
+        surface_legend = 'Nível Socioeconômico'
+      ) %>%
+        geogg.without_legend() %>%
+        geogg.add_title(paste0(ano)),
+      position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
     )
   }
 }
