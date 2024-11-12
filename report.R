@@ -1,11 +1,11 @@
 library(lcde.toolbox)
 library(lcde.client)
 
-db_path = 'C:/Users/pedro/Documents/iea/banco_pca.sqlite3'
-template_path = 'C:/Users/pedro/Documents/iea/report_pca/template.pptx'
-output_path = 'C:/Users/pedro/Desktop/report.pptx'
-nome_municipio = 'Ribeirão Preto'
-sigla_uf = 'SP'
+db_path = 'C:/Users/iea/Desktop/Pedro/banco_pca.sqlite3'
+template_path = 'C:/Users/iea/Desktop/Pedro/report_pca/template.pptx'
+output_path = 'C:/Users/iea/Desktop/report.pptx'
+nome_municipio = "Olho d'Água das Flores"
+sigla_uf = 'AL'
 rede = 'Municipal'
 etapas = c('Anos Iniciais', 'Anos Finais')
 anos = c(2019, 2023)
@@ -105,7 +105,6 @@ adp = adapter(db_path)
 #
 # doc %>% ppt.save(output_path)
 
-
 for(etapa in etapas) {
   for(ano in anos) {
     df = adp %>% adapter.fetch_pca_data_schools(
@@ -116,9 +115,10 @@ for(etapa in etapas) {
       anos = ano
     )
 
-    if(nrow(df) == 0) {
+    if(nrow(df) < 2) {
       stop(paste0(
-        "Não existem dados dos indicadores para ", ano, ", ", etapa
+        "Existem apenas ",nrow(df)," linhas com dados dos indicadores em ", ano, 
+        ", ", etapa, ". O relatório só pode ser gerado para 2 ou mais linhas."
       ))
     }
   }
