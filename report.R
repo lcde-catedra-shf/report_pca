@@ -4,10 +4,10 @@ library(lcde.client)
 db_path = 'C:/Users/iea/Desktop/Pedro/banco_pca.sqlite3'
 template_path = 'C:/Users/iea/Desktop/Pedro/report_pca/template.pptx'
 output_path = 'C:/Users/iea/Desktop/report.pptx'
-nome_municipio = "Olho d'Água das Flores"
-sigla_uf = 'AL'
+nome_municipio = "Ribeirão Preto"
+sigla_uf = 'SP'
 rede = 'Municipal'
-etapas = c('Anos Iniciais', 'Anos Finais')
+etapas = c('Anos Iniciais')
 anos = c(2019, 2023)
 add_boundary = TRUE
 add_surface = TRUE
@@ -117,7 +117,7 @@ for(etapa in etapas) {
 
     if(nrow(df) < 2) {
       stop(paste0(
-        "Existem apenas ",nrow(df)," linhas com dados dos indicadores em ", ano, 
+        "Existem apenas ",nrow(df)," linhas com dados dos indicadores em ", ano,
         ", ", etapa, ". O relatório só pode ser gerado para 2 ou mais linhas."
       ))
     }
@@ -322,7 +322,8 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11
       ),
       position = 'center'
     )
@@ -348,7 +349,8 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11
       ),
       position = 'center'
     )
@@ -373,7 +375,8 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11
       ),
       position = 'center'
     )
@@ -583,9 +586,11 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11,
+        size = 'small',
+        point_size = 2
       ) %>%
-        geogg.without_legend() %>%
         geogg.add_title(paste0(ano)),
       position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
     )
@@ -632,9 +637,11 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11,
+        size = 'small',
+        point_size = 2
       ) %>%
-        geogg.without_legend() %>%
         geogg.add_title(paste0(ano)),
       position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
     )
@@ -680,9 +687,11 @@ for(etapa in etapas) {
         surface_data = surface_data,
         surface_latitude = surface_latitude,
         surface_longitude = surface_longitude,
-        surface_legend = 'Nível Socioeconômico'
+        surface_legend = 'Nível Socioeconômico',
+        zoom = 11,
+        size = 'small',
+        point_size = 2
       ) %>%
-        geogg.without_legend() %>%
         geogg.add_title(paste0(ano)),
       position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
     )
