@@ -1,17 +1,17 @@
 library(lcde.toolbox)
 library(lcde.client)
 
-db_path = 'C:/Users/iea/Desktop/Pedro/banco_pca.sqlite3'
-template_path = 'C:/Users/iea/Desktop/Pedro/report_pca/template.pptx'
-output_path = 'C:/Users/iea/Desktop/report.pptx'
-nome_municipio = "Ribeirão Preto"
+db_path = 'C:/Users/pedro/Documents/iea/banco_pca.sqlite3'
+template_path = 'C:/Users/pedro/Documents/iea/report_pca/template.pptx'
+output_path = 'C:/Users/pedro/Desktop/report.pptx'
+nome_municipio = "Serrana"
 sigla_uf = 'SP'
 rede = 'Municipal'
 etapas = c('Anos Iniciais')
-anos = c(2019, 2023)
+anos = c(2019, 2021)
 add_boundary = TRUE
 add_surface = TRUE
-ano_inse = 2019
+ano_inse = 2021
 
 adp = adapter(db_path)
 
@@ -655,32 +655,55 @@ for(etapa in etapas) {
     )
   )
 
+  df = adp %>% adapter.fetch_pca_data_schools(
+    nome_municipio = nome_municipio,
+    sigla_uf = sigla_uf,
+    redes = rede,
+    etapas = etapa,
+    anos = anos
+  )
+  df = na.omit(df)
+  df$mat = round(df$mat, 0)
+  df$lp = round(df$lp, 0)
+  df$tdi = round(df$tdi, 0)
+  df$np = round(df$np * 10, 1)
+  df$fluxo = round(df$fluxo*100, 0)
+
+  dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
+  colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+
   for(i in 1:length(anos)) {
     ano = anos[i]
 
-    df = adp %>% adapter.fetch_pca_data_schools(
-      nome_municipio = nome_municipio,
-      sigla_uf = sigla_uf,
-      redes = rede,
-      etapas = etapa,
-      anos = ano
-    )
-    df = na.omit(df)
-    df$mat = round(df$mat, 0)
-    df$lp = round(df$lp, 0)
-    df$tdi = round(df$tdi, 0)
-    df$np = round(df$np * 10, 1)
-    df$fluxo = round(df$fluxo*100, 0)
-
-    dfpca = df[,c('lp', 'mat', 'np', 'fluxo', 'tdi')]
-    colnames(dfpca) = c('LP', 'MAT', 'NP', 'FLUXO', 'DIS')
+    mask = df$ano == ano
     pca_obj = pca.from_data_frame(dfpca)
+
+    data = pca_obj$principal_components$CP1
+    groups = factor(ifelse(
+        data < quantile(data, 0.25), '0% |- 25%', ifelse(
+          data < quantile(data, 0.50), '25% |- 50%', ifelse(
+            data < quantile(data, 0.75), '50% |- 75%', '75% |-| 100%'
+          )
+        )
+      )
+    )
+
+    color_map = c(
+      '0% |- 25%' = colors.red_to_green()[1],
+      '25% |- 50%' = colors.red_to_green()[2],
+      '50% |- 75%' = colors.red_to_green()[3],
+      '75% |-| 100%' = colors.red_to_green()[4]
+    )
+
+    dfi = df[mask,]
+    groups = groups[mask]
+    pca_obj = pca_obj %>% pca.filter(mask)
 
     doc = doc %>% ppt.add_ggplot(
       ggplot_obj = geogg.pca_map(
         pca_obj = pca_obj,
-        latitude = df$latitude,
-        longitude = df$longitude,
+        latitude = dfi$latitude,
+        longitude = dfi$longitude,
         add_surface = add_surface,
         add_boundary = add_boundary,
         georef_obj = georef_obj,
@@ -690,7 +713,9 @@ for(etapa in etapas) {
         surface_legend = 'Nível Socioeconômico',
         zoom = 11,
         size = 'small',
-        point_size = 2
+        point_size = 2,
+        groups = groups,
+        color_map = color_map
       ) %>%
         geogg.add_title(paste0(ano)),
       position = pptpos.grid(1, length(anos), 1, i, margin=0.03)
